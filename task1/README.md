@@ -11,6 +11,8 @@ Basic barebone app that allows the following functionalities.
 * `/image` serves my favourite gif  
 * `/input` serves a simple text form which on submission logs the recieved data to stdout
 
+**Note:** Trying to access `/robots.txt` will result in a 403 Forbidden
+
 ## Requirements
 In order to run the flask app you require **python 3.4** or above along with all the requirements in the `requirements.txt`. In case **pip** has been installed, all the requirements can simply be installed using the command `pip install -r requirements.txt`
 
