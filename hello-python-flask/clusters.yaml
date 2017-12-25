@@ -1,7 +1,7 @@
 - alias: hasura
   config:
     configmap: controller-conf
-    namespace: antecedence99-hasura
+    namespace: bandoleer12-hasura
   data: null
-  kubeContext: antecedence99
-  name: antecedence99
+  kubeContext: bandoleer12
+  name: bandoleer12
