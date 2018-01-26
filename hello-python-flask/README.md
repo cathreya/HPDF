@@ -1,216 +1,374 @@
 # hello-python-flask
 
-This project consists of a basic Hasura project with a simple Python-Flask app running on it. Once this app is deployed on a Hasura cluster, you will have the app running at `https://api.<cluster-name>.hasura-app.io`
+Boilerplate Hasura project with [Flask](http://flask.pocoo.org/) microservice.
 
-This is the right place to start if you are planning to build or want to learn to build an Python-Flask app with Hasura.
 
-## Sections
+## Getting started
 
-* [Introduction](#introduction)
-* [Quickstart](#quickstart)
-* [Adding your own Python-Flask code](#adding-your-existing-flask-code)
-* [Data API](#data-apis)
-* [Auth API](#auth-apis)
-* [Filestore API](#filestore-apis)
-* [Local development](#local-development)
-* [FAQ](#faq)
+### Prerequisites
 
-## Introduction
+- [Hasura CLI](https://docs.hasura.io/0.15/manual/install-hasura-cli.html)
+- [Git](https://git-scm.com)
+- [Python 3](https://www.python.org/downloads/) and [pip](https://pip.pypa.io/en/stable/installing/) (required only for local development)
 
-This quickstart project comes with the following by default:
+### Quickstart
 
-1. A basic Hasura project
-
-2. Two tables `article` and `author` with some dummy data
-
-## Quickstart
-
-Follow this section to get this project working. Before you begin, ensure you have the latest version of [hasura cli tool](https://docs.hasura.io/0.15/manual/install-hasura-cli.html) installed.
-
-### Step 1: Getting the project
-
-```sh
+```bash
+# Quickstart from this boilerplate 
 $ hasura quickstart hello-python-flask
+```
+
+The `quickstart` command does the following:
+
+1. Creates a new directory `hello-python-flask` in the current working directory
+2. Creates a free Hasura cluster and sets it as the default for this project
+3. Sets up `hello-python-flask` as a git repository and adds `hasura` remote to push code
+4. Adds your SSH public key to the cluster so that you can push to it
+
+### Deploy
+
+```bash
+# Navigate to the project directory
 $ cd hello-python-flask
-```
 
-The above command does the following:
-1. Creates a new folder in the current working directory called `hello-python-flask`
-2. Creates a new free Hasura cluster for you and sets that cluster as the default cluster for this project
-3. Initializes `hello-python-flask` as a git repository and adds the necessary git remotes.
-
-### Step 2: Deploying this project
-
-To deploy the project:
-
-```sh
-$ git add .
-$ git commit -m "Initial Commit"
+# git add, commit and push to deploy
+$ git add . && git commit -m "First commit"
 $ git push hasura master
 ```
-When you push for the first time, it might take sometime. Next time onwards, it is really fast.
 
-Once the above commands are executed successfully, head over to `https://api.<cluster-name>.hasura-app.io` (in this case `https://api.h34-excise98-stg.hasura-app.io`) to view your app.
+Once the git push goes through, Flask microservice (called `app`) will be available at a URL.
 
-## Adding your existing Flask code
-The Flask microservice[1] sample code is inside the `microservices/api/app` directory. You can copy all your existing Flask code directly inside this directory, and start deploying your own Flask code to Hasura cluster.
-
-### Step 1: Add your Flask code in the microservices directory
-Copy all your exising Flask source code in `microservices/api/app` directory or replace the `microservices/api/app` directory with your app directory. Ensure that the structure of the directory is coherent with the current structure.
-
-### Step 2: Git add and commit
-```
-$ git add .
-$ git commit -m "Added my Flask code"
+```bash
+# Open the flask app url in browser
+$ hasura microservice open app
 ```
 
-### Step 3: Deploy
+If the browser shows a "Hasura Hello World" page, everything is working as expected.
+If it doesn't, go through the previous steps and see if you missed anything.
+
+
+## Edit and deploy code
+
+### Directory structure
+
+The flask microservice is located in `microservices/app` directory in your Hasura project with the following structure:
+
+```bash
+.
+├── Dockerfile                   # instructions to build the image
+├── k8s.yaml                     # defines how the app is deployed
+├── conf
+│   └── gunicorn_config.py       # configuration for the web server
+└── src
+    ├── config.py                # some utilities to configure URLs etc
+    ├── hasura.py                # hasura API examples
+    ├── __init__.py              # main Flask app is defined here
+    ├── requirements.txt         # python dependency requirements
+    └── server.py                # main Flask server code
 ```
+
+### Edit
+
+`server.py` is where the main app is present. You can edit this file and deploy the changes.
+For example, un-comment lines `2`, `11-13` to add new URL `/json`:
+
+```python
+from flask import jsonify
+
+@app.route("/json")
+def json_message():
+    return jsonify(message="Hello World")
+```
+
+These lines will add `/json` which returns `{"message": "Hello World"}`.
+
+### Deploy
+
+Save the file, git add, commit and push to deploy the changes:
+
+```bash
+# git add, commit and push to deploy
+$ git add src/server.py
+$ git commit -m "add new url /json"
 $ git push hasura master
 ```
-Now your Flask application should be running at: `https://api.<cluster-name>.hasura-app.io`
 
-[1] a microservice is a running application on the Hasura cluster. This could be an API, a web app, a Javascript app etc.
+### Verify
 
-## Hasura API console
+To checkout the new URL, open the microservice URL in a browser and navigate to `/json`:
 
-Every Hasura cluster comes with an api console that gives you a GUI to test out the BaaS features of Hasura. To open the api console
+```bash
+# open the url in browser
+$ hasura microservice open app
 
-```sh
+# add /json at the end of the url
+```
+
+### Debug
+
+If the push fails with an error `Updating deployment failed`, or the URL is showing `502 Bad Gateway`/`504 Gateway Timeout`,
+follow the instruction on the page and checkout the logs to see what is going wrong with the microservice:
+
+```bash
+# see status of microservice app
+$ hasura microservice list
+
+# get logs for app
+$ hasura microservice logs app
+```
+
+You can deploy further changes by going through `Edit -> Deploy -> Verify -> Debug` cycle again and again.
+
+*TIP*: If you already have a working flask app and want to deploy it quickly, jump to [Deploy your existing Flask app](#deploy-your-existing-flask-app)
+
+## Use a database
+
+Hasura comes with a pre-configured ready-to-use PostgreSQL database, which can be contacted over HTTP JSON APIs. You can use this database from client side or server side just by making HTTP API calls with JSON data. There are no DB connection strings or ORMs to worry about.
+
+### API Console
+
+The best place to get started with APIs is [Hasura API Console](https://docs.hasura.io/0.15/manual/api-console/index.html).
+
+```bash
 $ hasura api-console
 ```
 
-## Data APIs
+This command will run a small web server and opens up API Console in a new browser tab.
+There are already some tables created along with this boilerplate, like `article` and `author`.
+These tables were created using [migrations](https://docs.hasura.io/0.15/manual/data/data-migration.html).
+Every change you make on the console is saved as a migration inside `migrations/` directory.
 
-Hasura provides ready to use data apis to make powerful data queries on your tables. This means that you have ready-to-use JSON apis on any tables created. The url to be used to make these queries is always of the type: `https://data.cluster-name.hasura-app.io/v1/query` (in this case `https://data.h34-excise98-stg.hasura-app.io`)
+### Using Data APIs
 
-As mentioned earlier, this quickstart app comes with two pre-created tables `author` and `article`.
+- Create required tables/columns using API Console (Data -> Schema)
+- Use Query Builder under API Explorer and create the query
+- Click on Generate API Code button and select Python Requests
+- Copy and paste the python code into your flask app source code
 
-**author**
+### Example
 
-column | type
---- | ---
-id | integer NOT NULL *primary key*
-name | text NOT NULL
+This boilerplate defines a `/get_articles` endpoint which fetches a list of articles from the database and return JSON data. The query builder will show similar code when same query is built.
 
-**article**
+```python
+# hasura.py
 
-column | type
---- | ---
-id | serial NOT NULL *primary key*
-title | text NOT NULL
-content | text NOT NULL
-rating | numeric NOT NULL
-author_id | integer NOT NULL
+@hasura_examples.route("/get_articles")
+def get_articles():
+    query = {
+        "type": "select",
+        "args": {
+            "table": "article",
+            "columns": [
+                "*"
+            ]
+        }
+    }
 
-Alternatively, you can also view the schema for these tables on the api console by heading over to the tab named `data` as shown in the screenshots below.
+    response = requests.post(
+        dataUrl, data=json.dumps(query)
+    )
+    data = response.json()
 
-![alt text][data1]
-![alt text][data2]
+    return jsonify(data=data)
+```
 
-This means that you can now leverage the Hasura data queries to perform CRUD operations on these tables.
-
-For eg, to fetch a list of all articles from the article table, you have to send the following JSON request to the data api endpoint -> `https://data.cluster-name.hasura-app.io/v1/query` (replace `cluster-name` with your cluster name)
+This snippet of code returns a JSON similar to the following format:
 
 ```json
 {
-    "type": "select",
-    "args": {
-        "table": "article",
-        "columns": [
-            "id",
-            "title",
-            "content",
-            "rating",
-            "author_id"
-        ]
-    }
+  "data": [
+    {
+      "author_id": 12,
+      "content": "Vestibulum accumsan neque et nunc. Quisque...",
+      "id": 1,
+      "rating": 4,
+      "title": "sem ut dolor dapibus gravida."
+    },
+    {
+      "author_id": 10,
+      "content": "lacus pede sagittis augue, eu tempor erat neque...",
+      "id": 2,
+      "rating": 4,
+      "title": "nonummy. Fusce fermentum fermentum arcu."
+    }, 
+    ...
+  ]
 }
 ```
 
-To learn more about the data apis, head over to our [docs](https://docs.hasura.io/0.15/manual/data/index.html)
+### Internal & External URLs
 
-## Auth APIs
+If you look closer in `hasura.py`, `dataUrl` is defined in two different ways, internal and external. When your app is running inside the cluster, it can directly contact the Data APIs without any authentication. On the other hand, external URLs always go through the API Gateway, and hence special permissions will have to be applied over table for a non-authenticated user to access data.
 
-Every app almost always requires some form of authentication. This is useful to identify a user and provide some sort of personalised experience to the user. Hasura provides various types of authentication (username/password, mobile/otp, email/password, Google, Facebook etc).
+- `http://data.hasura` - internal url
+- `http://data.[cluster-name].hasura-app.io` - external url
 
-You can try out these in the `API EXPLORER` tab of the `api console`. To learn more, check out our [docs](https://docs.hasura.io/0.15/manual/users/index.html)
+*PS*: [Hasura Data APIs](https://docs.hasura.io/0.15/manual/data/index.html) are really powerful with nifty features like relationships, role based row and column level permissions etc. Using the APIs to their full potential will prevent you from re-inventing the wheel while building your app and can save a lot of time. 
 
-## Filestore APIs
+*TIP*: Use `hasura ms list` to get all internal and external URLs available in your current cluster.
 
-Sometimes, you would want to upload some files to the cloud. This can range from a profile pic for your user or images for things listed on your app. You can securely add, remove, manage, update files such as pictures, videos, documents using Hasura filestore.
+## Add authentication
 
-You can try out these in the `API EXPLORER` tab of the `api console`. To learn more, check out our [docs](https://docs.hasura.io/0.15/manual/users/index.html)
+When your app needs authentication, [Hasura Auth APIs](https://docs.hasura.io/0.15/manual/users/index.html) can be used to manage users, login, signup, logout etc. You can think of it like an identity service which takes away all the user management headaches from your app so that you can focus on your app's core functionality.
 
-## Custom Microservice
+Just like the Data APIs, you can checkout and experiment with the Auth APIs using [Hasura API Console](https://docs.hasura.io/0.15/manual/api-console/index.html).
 
-There might be cases where you might want to perform some custom business logic on your apis. For example, sending an email/sms to a user on sign up or sending a push notification to the mobile device when some event happens. For this, you would want to create your own custom microservice which does these for you on the endpoints that you define.
+Combined with database permission and API gateway session resolution, you can control which user or what roles have access to each row and column in any table.
 
-This quickstart comes with one such custom microservice written in Python using the Flask framework. Check it out in action at `https://api.cluster-name.hasura-app.io` . Currently, it just returns a JSON response of "Hello World" at that endpoint.
+### API gateway & session middleware
 
-In case you want to use another language/framework for your custom microservice. Take a look at our docs to see how you can add a new custom microservice.
+For every request coming through external URL into a cluster, the API gateway tries to resolve a user based on a `Cookie` or an `Authorization` header. If none of them are present or are invalid, the following header is set and then the request is passed on to the upstream service:
+
+- `X-Hasura-Role: anonymous`
+
+
+But, if the cookie or the authorization header does resolve to a user, gateway gets the user's ID and role from auth microservice and add them as headers before passing to upstream:
+
+- `X-Hasura-User-Id: 3`
+- `X-Hasura-Role: user`
+
+Hence, other microservices need not manage sessions and can just rely on `X-Hasura-Role` and `X-Hasura-User-Id` headers.
+
+## Customize
+
+Hasura runs [microservices](https://docs.hasura.io/0.15/manual/custom-microservices/index.html) as Docker containers on a Kubernetes cluster.
+You can read about [Hasura architecture](https://docs.hasura.io/0.15/manual/cluster/architecture.html) in case you want to know more.
+
+### Add a python dependency
+
+In order use new python package in your app, you can just add it to `src/requirements.txt` and the git-push or docker build process will
+automatically install the package for you. If the `pip install` steps thorw some errors in demand of a system dependency,
+you can install those by adding it to the `Dockerfile` at the correct place.
+
+```
+# src/requirements.txt:
+
+flask
+requests
+gunicorn
+
+# add your new packages one per each line
+```
+
+### Add a system dependency
+
+The base image used in this boilerplate is [python:3](https://hub.docker.com/_/python/) debian. Hence, all debian packages are available for installation.
+You can add a package by mentioning it in the `Dockerfile` among the existing `apt-get install` packages.
+
+```dockerfile
+# Dockerfile
+
+FROM python:3
+
+# install required debian packages
+# add any package that is required after `python-dev`, end the line with \
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    python-dev \
+&& rm -rf /var/lib/apt/lists/*
+
+# install requirements
+COPY src/requirements.txt /tmp/requirements.txt
+RUN pip3 install -r /tmp/requirements.txt
+
+# set /app as working directory
+WORKDIR /app
+
+# copy current directory to /app
+COPY . /app
+
+# run gunicorn server
+# port is configured through the gunicorn config file
+CMD ["gunicorn", "--config", "./conf/gunicorn_config.py", "src:app"]
+
+```
+
+### Deploy your existing Flask app
+
+If you already have a Flask app and want to deploy it onto Hasura, read ahead:
+
+- Replace the contents of `src/` directory with your own app's python files.
+- Leave `k8s.yaml`, `Dockerfile` and `conf/` as it is.
+- Make sure there is already a `requirements.txt` file present inside the new `src/` indicating all your python dependencies (see [above](#add-a-python-dependency)).
+- If there are any system dependencies, add and configure them in `Dockerfile` (see [above](#add-a-system-dependency)).
+- If the Flask app is not called `app`, change the last line in `Dockerfile` reflect the same.
+  For example, if the app is called `backend`, the `CMD` line in `Dockerfile` will become:
+  ```dockerfile
+  CMD ["gunicorn", "--config", "./conf/gunicorn_config.py", "src:backend"]
+  ```
 
 ## Local development
 
-Everytime you push, your code will get deployed on a public URL. However, for faster iteration you should locally test your changes.
+With Hasura's easy and fast git-push-to-deploy feature, you hardly need to run your code locally.
+However, you can follow the steps below in case you have to run the code in your local machine.
 
-### Testing your app locally
+### Without Docker
 
-Follow these steps to test out your app locally
+It is recommended to use a [Virtual Environment](http://docs.python-guide.org/en/latest/dev/virtualenvs/) for Python when you are running locally.
+Don't forget to add these directories to `.gitignore` to avoid committing packages to source code repo.
 
-```sh
-$ cd microservices/api/
-$ docker build -t python-flask:<tag> .
-$ docker run -d -p 8080:8080 python-flask:<tag>
-```
-Your app will be running on port 8080.
+```bash
+# setup pipenv or virtualenv and activate it (see link above)
 
-## Files and Directories
+# go to app directory
+$ cd microservices/app
 
-The project (a.k.a. project directory) has a particular directory structure and it has to be maintained strictly, else `hasura` cli would not work as expected. A representative project is shown below:
+# install dependencies
+$ pip install -r src/requirements.txt
 
-```
-.
-├── hasura.yaml
-├── clusters.yaml
-├── conf
-│   ├── authorized-keys.yaml
-│   ├── auth.yaml
-│   ├── ci.yaml
-│   ├── domains.yaml
-│   ├── filestore.yaml
-│   ├── gateway.yaml
-│   ├── http-directives.conf
-│   ├── notify.yaml
-│   ├── postgres.yaml
-│   ├── routes.yaml
-│   └── session-store.yaml
-├── migrations
-│   ├── 1504788327_create_table_user.down.yaml
-│   ├── 1504788327_create_table_user.down.sql
-│   ├── 1504788327_create_table_user.up.yaml
-│   └── 1504788327_create_table_user.up.sql
-└── microservices
-    └── api
-        ├── app/
-        ├── k8s.yaml
-        └── Dockerfile
+# Optional: set an environment variable to run Hasura examples 
+# otherwise, remove Hasura examples, 
+#   delete lines 5-8 from `src/__init__.py`
+#   remove file `src/hasura.py`
+$ export CLUSTER_NAME=[your-hasura-cluster-name]
+
+# run the development server (change bind address if it's already used)
+$ gunicorn --reload --bind "0.0.0.0:8080" src:app
 ```
 
-### `hasura.yaml`
+Go to [http://localhost:8080](http://localhost:8080) using your browser to see the development version on the app.
+You can keep the gunicorn server running and when you edit source code and save the files, the server will be reload the new code automatically.
+Once you have made required changes, you can [deploy them to Hasura cluster](#deploy).
 
-This file contains some metadata about the project, namely a name, description and some keywords. Also contains `platformVersion` which says which Hasura platform version is compatible with this project.
+### With Docker
 
-### `clusters.yaml`
+Install [Docker CE](https://docs.docker.com/engine/installation/) and cd to app directory:
 
-Info about the clusters added to this project can be found in this file. Each cluster is defined by it's name allotted by Hasura. While adding the cluster to the project you are prompted to give an alias, which is just hasura by default. The `kubeContext` mentions the name of kubernetes context used to access the cluster, which is also managed by hasura. The `config` key denotes the location of cluster's metadata on the cluster itself. This information is parsed and cluster's metadata is appended while conf is rendered. `data` key is for holding custom variables that you can define.
+```bash
+# go to app directory
+$ cd microservices/app
 
-```yaml
-- name: h34-ambitious93-stg
-  alias: hasura
-  kubeContext: h34-ambitious93-stg
-  config:
-    configmap: controller-conf
-    namespace: hasura
-  data: null
+# build the docker image
+$ docker build -t hello-python-flask-app .
+
+# run the image with port bindings and CLUSTER_NAME environment variable
+# as mentioned above, remove hasura.py if you don't want to add CLUSTER_NAME
+$ docker run --rm -it -p 8080:8080 -e CLUSTER_NAME=[your-hasura-cluster-name] hello-python-flask-app
+
+# app will be available at `http://localhost:8080`
+# press Ctrl+C to stop the running container
 ```
+
+For any change you make to the source code, you will have to stop the container, build the image again and run a new container.
+If you mount the current directory as a volume, you can live-reload your code changes:
+
+```bash
+# go to app directory
+$ cd microservices/app
+
+# build the docker image
+$ docker build -t hello-python-flask-app .
+
+# run the container
+$ docker run --rm -it -p 8080:8080 \
+             -e CLUSTER_NAME=[your-hasura-cluster-name] \
+             -v $(pwd):/app \
+             hello-python-flask-app \ 
+             gunicorn --reload --bind "0.0.0.0:8080" src:app
+             
+# app will be available at `http://localhost:8080`
+# press Ctrl+C to stop the running container
+```
+
+Now, any change you make to your source code will be immediately updated on the running app.
+

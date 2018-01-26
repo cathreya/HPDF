@@ -1,7 +1,7 @@
 - alias: hasura
   config:
     configmap: controller-conf
-    namespace: bandoleer12-hasura
+    namespace: amorphously97-hasura
   data: null
-  kubeContext: bandoleer12
-  name: bandoleer12
+  kubeContext: amorphously97
+  name: amorphously97
