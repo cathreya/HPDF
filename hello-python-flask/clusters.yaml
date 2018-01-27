@@ -1,7 +1,0 @@
-- alias: hasura
-  config:
-    configmap: controller-conf
-    namespace: amorphously97-hasura
-  data: null
-  kubeContext: amorphously97
-  name: amorphously97
